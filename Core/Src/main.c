@@ -164,6 +164,7 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+  LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
   // set HIGT VOLTAGE to OFF!
   HV_OFF;
   HV_OFF;
