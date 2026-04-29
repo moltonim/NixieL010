@@ -25,6 +25,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
+
+#include "Utils.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,10 +39,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-volatile uint8_t  rx_byte     = 0;
 volatile char     rx_buffer[RX_BUFFER_SIZE] = {0};
 volatile uint8_t  rx_index    = 0;
 volatile uint8_t  rx_complete = 0;
+
+LL_RTC_TimeTypeDef myTime = {0};
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,18 +54,77 @@ volatile uint8_t  rx_complete = 0;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-/* Buffer used for reception */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+
+int parsetime(LL_RTC_TimeTypeDef *t, const char* buf)
+{
+//    int n = 0;
+    int p = 0;
+    if (buf[p++] != '@')
+        return -1;
+
+    //d.da_year = (n = (buf[p++]-'0')*1000+(buf[p++]-'0')*100+(buf[p++]-'0')*10+(buf[p++]-'0'));
+    /*
+    n += (buf[p++]-'0')*1000;
+    n += (buf[p++]-'0')*100;
+    //n += (buf[p++]-'0')*10;
+    n += (buf[p++]-'0')*10;
+    n += (buf[p++]-'0');
+    //d->Year = n;
+    n  = (buf[p++]-'0')*10;
+    n += (buf[p++]-'0');
+    //d->Month = n;
+    n  = (buf[p++]-'0')*10;
+    n += buf[p++]-'0';
+    //d->Day = n;
+    */
+    t->Hours  = (buf[p++]-'0')*10;
+    t->Hours += buf[p++]-'0';
+    t->Minutes  = (buf[p++]-'0')*10;
+    t->Minutes += (buf[p++]-'0');
+    t->Seconds  = (buf[p++]-'0')*10;
+    t->Seconds += (buf[p++]-'0');
+
+    return 0;
+}
+
+void SetRTC()
+{
+	LL_RTC_DateTypeDef d_dummy;
+
+	// Valori fissi che l'hardware accetta senza problemi
+	d_dummy.Day     = 1;
+	d_dummy.Month   = LL_RTC_MONTH_JANUARY;
+	d_dummy.Year    = 0; // Anno 2000
+	d_dummy.WeekDay = LL_RTC_WEEKDAY_MONDAY;
+
+	// 1. Sblocca i registri RTC
+	LL_RTC_DisableWriteProtection(RTC);
+	LL_RTC_EnterInitMode(RTC);
+
+	// 2. Scrivi l'ora
+	// Nota: LL_RTC_TIME_FORMAT_AM_OR_24 � necessario
+	LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24, myTime.Hours, myTime.Minutes, myTime.Seconds);
+
+	// 3. Scrivi la data
+	//LL_RTC_DATE_Config(RTC, LL_RTC_WEEKDAY_FRIDAY, myDate.Day, myDate.Month, myDate.Year);
+	LL_RTC_DATE_Config(RTC, d_dummy.WeekDay, d_dummy.Day, d_dummy.Month, d_dummy.Year);
+
+	// 4. Chiudi e riproteggi
+	LL_RTC_ExitInitMode(RTC);
+	LL_RTC_EnableWriteProtection(RTC);
+}
 
 /* USER CODE END 0 */
 
@@ -77,7 +142,11 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+
+  /* SysTick_IRQn interrupt configuration */
+  NVIC_SetPriority(SysTick_IRQn, 3);
 
   /* USER CODE BEGIN Init */
 
@@ -87,7 +156,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  LL_SYSTICK_EnableIT();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -95,22 +164,52 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-  /* Avvia la prima ricezione (1 byte) */
-     HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
+  // set HIGT VOLTAGE to OFF!
+  HV_OFF;
+  HV_OFF;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+     uint32_t tickstart = GetTick();
+  
   while (1)
   {
-	  HAL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
-	  //HAL_Delay(200);
+	  if (GetTick() > tickstart )
+	  {
+		  LL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
+		  tickstart = GetTick() + 200;
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  char buf[RX_BUFFER_SIZE] = {};
 	  if (rx_complete)
 	  {
+		  __disable_irq(); // Disabilita tutti gli interrupt
 		  rx_complete = 0;
+		  memcpy(buf, (const char*)&rx_buffer[0], rx_index);
+		  rx_index = 0;
+		  __enable_irq();  // Riabilita gli interrupt
+
+
+		  //HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
+
+		  //if (!strncmp("T20", buf, 3))
+		  if (buf[0] == '@')
+		  {
+			  if (parsetime(&myTime, buf) == 0)
+			  {
+				  SetRTC();
+			  }
+			  //LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
+			  LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
+
+			  LL_GPIO_ResetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
+			  LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
+		  }
 	  }
   }
   /* USER CODE END 3 */
@@ -122,56 +221,60 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-  /** Configure LSE Drive Capability
-  */
-  HAL_PWR_EnableBkUpAccess();
-  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSE;
-  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  LL_FLASH_SetLatency(LL_FLASH_LATENCY_0);
+  while(LL_FLASH_GetLatency()!= LL_FLASH_LATENCY_0)
   {
-    Error_Handler();
+  }
+  LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
+  while (LL_PWR_IsActiveFlag_VOS() != 0)
+  {
+  }
+  LL_RCC_HSI_Enable();
+
+   /* Wait till HSI is ready */
+  while(LL_RCC_HSI_IsReady() != 1)
+  {
+
+  }
+  LL_RCC_HSI_SetCalibTrimming(16);
+  LL_PWR_EnableBkUpAccess();
+  if(LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSE)
+  {
+    LL_RCC_ForceBackupDomainReset();
+    LL_RCC_ReleaseBackupDomainReset();
+  }
+  LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_LOW);
+  LL_RCC_LSE_Enable();
+
+   /* Wait till LSE is ready */
+  while(LL_RCC_LSE_IsReady() != 1)
+  {
+
+  }
+  if(LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSE)
+  {
+    LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
+  }
+  LL_RCC_EnableRTC();
+  LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+  LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+  LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
+  LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSI);
+
+   /* Wait till System clock is ready */
+  while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSI)
+  {
+
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  LL_Init1msTick(16000000);
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_LPUART1|RCC_PERIPHCLK_RTC;
-  PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_HSI;
-  PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  LL_SetSystemCoreClock(16000000);
+  LL_RCC_SetLPUARTClockSource(LL_RCC_LPUART1_CLKSOURCE_HSI);
 }
 
 /* USER CODE BEGIN 4 */
-
+#if HAL
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == LPUART1)
@@ -189,13 +292,37 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
         /* Riavvia ricezione del prossimo byte
            (a meno che non si voglia farlo nel main dopo l'elaborazione) */
+
         if (!rx_complete)
         {
             HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
         }
     }
 }
+#endif
 
+void LPUART1_Callback(uint8_t data)
+{
+	if (data == '@') {
+		rx_index = 0; // Inizio di un nuovo messaggio
+	}
+	//else return;
+
+	if (rx_index < RX_BUFFER_SIZE) {
+		rx_buffer[rx_index++] = data;
+
+		if (data == '\n' || data == '\r')
+		{
+			/* Fine stringa */
+			rx_buffer[rx_index] = '\0';
+			rx_complete = 1;
+		}
+			// Qui chiami la tua funzione parsetime(&t, &d, rx_buffer)
+	}
+}
+
+
+#if HAL
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == LPUART1)
@@ -210,6 +337,20 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
         __HAL_UART_CLEAR_FEFLAG(huart);    /* Clear Framing Error */
         HAL_UART_Receive_IT(huart, (uint8_t *)&rx_byte, 1);
     }
+}
+#endif
+
+
+void User_Button_IT_Handler()
+{
+	// rifaccio partire la seriale in ricezione
+	//HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
+
+	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
+	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
+	LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
+	LL_GPIO_SetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
+
 }
 
 /* USER CODE END 4 */

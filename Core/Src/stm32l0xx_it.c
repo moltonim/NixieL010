@@ -41,7 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+extern volatile uint32_t ms_ticks;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -55,7 +55,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern UART_HandleTypeDef hlpuart1;
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -125,9 +125,9 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+	ms_ticks++;
   /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
+
   /* USER CODE BEGIN SysTick_IRQn 1 */
 
   /* USER CODE END SysTick_IRQn 1 */
@@ -141,14 +141,57 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+  * @brief This function handles EXTI line 0 and line 1 interrupts.
+  */
+void EXTI0_1_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI0_1_IRQn 0 */
+
+  /* USER CODE END EXTI0_1_IRQn 0 */
+  if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_1) != RESET)
+  {
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
+    /* USER CODE BEGIN LL_EXTI_LINE_1 */
+	User_Button_IT_Handler();
+
+    /* USER CODE END LL_EXTI_LINE_1 */
+  }
+  /* USER CODE BEGIN EXTI0_1_IRQn 1 */
+
+  /* USER CODE END EXTI0_1_IRQn 1 */
+}
+
+/**
   * @brief This function handles LPUART1 global interrupt / LPUART1 wake-up interrupt through EXTI line 28.
   */
 void LPUART1_IRQHandler(void)
 {
   /* USER CODE BEGIN LPUART1_IRQn 0 */
+	// Controlla se il registro di ricezione non � vuoto
+	if (LL_LPUART_IsActiveFlag_RXNE(LPUART1) && LL_LPUART_IsEnabledIT_RXNE(LPUART1))
+	{
+		/* Leggere il dato pulisce automaticamente il flag RXNE */
+		uint8_t rx_byte = LL_LPUART_ReceiveData8(LPUART1);
 
+		/* Inserisci qui la tua logica di parsing (es. accumulo nel buffer) */
+		LPUART1_Callback(rx_byte);
+	}
+
+	/* --- 2. GESTIONE ERRORI (Overrun, Framing, Noise) --- */
+	// Overrun Error (ORE) - Il pi� comune se il codice � lento
+	if (LL_LPUART_IsActiveFlag_ORE(LPUART1))
+	{
+		LL_LPUART_ClearFlag_ORE(LPUART1); // Fondamentale: pulisce l'errore
+		/* Logica di ripristino se necessaria */
+	}
+
+	// Framing Error (FE) o Noise Error (NE)
+	if (LL_LPUART_IsActiveFlag_FE(LPUART1) || LL_LPUART_IsActiveFlag_NE(LPUART1))
+	{
+		LL_LPUART_ClearFlag_FE(LPUART1);
+		LL_LPUART_ClearFlag_NE(LPUART1);
+	}
   /* USER CODE END LPUART1_IRQn 0 */
-  HAL_UART_IRQHandler(&hlpuart1);
   /* USER CODE BEGIN LPUART1_IRQn 1 */
 
   /* USER CODE END LPUART1_IRQn 1 */

@@ -33,13 +33,14 @@ extern "C" {
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
-void Set_NixieTime(uint8_t h, uint8_t m, uint8_t s);
-
+#define HV_OFF	LL_GPIO_ResetOutputPin(HV_ENABLE_GPIO_Port, HV_ENABLE_Pin);
+#define HV_ON	LL_GPIO_SetOutputPin(HV_ENABLE_GPIO_Port, HV_ENABLE_Pin);
 /* USER CODE END Private defines */
 
 void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+void Set_NixieTime(uint8_t h, uint8_t m, uint8_t s);
 
 /* USER CODE END Prototypes */
 

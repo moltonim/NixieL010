@@ -27,7 +27,23 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l0xx_hal.h"
+
+#include "stm32l0xx_ll_lpuart.h"
+#include "stm32l0xx_ll_rcc.h"
+#include "stm32l0xx_ll_crs.h"
+#include "stm32l0xx_ll_bus.h"
+#include "stm32l0xx_ll_system.h"
+#include "stm32l0xx_ll_exti.h"
+#include "stm32l0xx_ll_cortex.h"
+#include "stm32l0xx_ll_utils.h"
+#include "stm32l0xx_ll_pwr.h"
+#include "stm32l0xx_ll_dma.h"
+#include "stm32l0xx_ll_rtc.h"
+#include "stm32l0xx_ll_gpio.h"
+
+#if defined(USE_FULL_ASSERT)
+#include "stm32_assert.h"
+#endif /* USE_FULL_ASSERT */
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,9 +62,8 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-#define RX_BUFFER_SIZE 128
+#define RX_BUFFER_SIZE 50
 
-extern UART_HandleTypeDef hlpuart1;
 extern volatile uint8_t  rx_byte;
 extern volatile char     rx_buffer[RX_BUFFER_SIZE];
 extern volatile uint8_t  rx_index;
@@ -59,54 +74,72 @@ extern volatile uint8_t  rx_complete;
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void User_Button_IT_Handler(void);
+void LPUART1_Callback(uint8_t rx_byte);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define HV_ENABLE_Pin GPIO_PIN_0
+#define HV_ENABLE_Pin LL_GPIO_PIN_0
 #define HV_ENABLE_GPIO_Port GPIOC
-#define SEPARATOR_Pin GPIO_PIN_13
+#define SEPARATOR_Pin LL_GPIO_PIN_13
 #define SEPARATOR_GPIO_Port GPIOC
-#define LED_G_Pin GPIO_PIN_5
+#define GETUP_Pin LL_GPIO_PIN_0
+#define GETUP_GPIO_Port GPIOA
+#define BUTTON_Pin LL_GPIO_PIN_1
+#define BUTTON_GPIO_Port GPIOA
+#define BUTTON_EXTI_IRQn EXTI0_1_IRQn
+#define LED_G_Pin LL_GPIO_PIN_5
 #define LED_G_GPIO_Port GPIOA
-#define LED_Y_Pin GPIO_PIN_6
+#define LED_Y_Pin LL_GPIO_PIN_6
 #define LED_Y_GPIO_Port GPIOA
-#define LED_R_Pin GPIO_PIN_7
+#define LED_R_Pin LL_GPIO_PIN_7
 #define LED_R_GPIO_Port GPIOA
-#define ANODE_HD_Pin GPIO_PIN_0
+#define ANODE_HD_Pin LL_GPIO_PIN_0
 #define ANODE_HD_GPIO_Port GPIOB
-#define ANODE_HU_Pin GPIO_PIN_1
+#define ANODE_HU_Pin LL_GPIO_PIN_1
 #define ANODE_HU_GPIO_Port GPIOB
-#define ANODE_MD_Pin GPIO_PIN_2
+#define ANODE_MD_Pin LL_GPIO_PIN_2
 #define ANODE_MD_GPIO_Port GPIOB
-#define CATHODE_4_Pin GPIO_PIN_10
+#define CATHODE_4_Pin LL_GPIO_PIN_10
 #define CATHODE_4_GPIO_Port GPIOB
-#define CATHODE_5_Pin GPIO_PIN_11
+#define CATHODE_5_Pin LL_GPIO_PIN_11
 #define CATHODE_5_GPIO_Port GPIOB
-#define CATHODE_6_Pin GPIO_PIN_12
+#define CATHODE_6_Pin LL_GPIO_PIN_12
 #define CATHODE_6_GPIO_Port GPIOB
-#define CATHODE_7_Pin GPIO_PIN_13
+#define CATHODE_7_Pin LL_GPIO_PIN_13
 #define CATHODE_7_GPIO_Port GPIOB
-#define CATHODE_8_Pin GPIO_PIN_14
+#define CATHODE_8_Pin LL_GPIO_PIN_14
 #define CATHODE_8_GPIO_Port GPIOB
-#define CATHODE_9_Pin GPIO_PIN_15
+#define CATHODE_9_Pin LL_GPIO_PIN_15
 #define CATHODE_9_GPIO_Port GPIOB
-#define Vac_OFF_Pin GPIO_PIN_15
+#define Vac_OFF_Pin LL_GPIO_PIN_15
 #define Vac_OFF_GPIO_Port GPIOA
-#define ANODE_MU_Pin GPIO_PIN_3
+#define ANODE_MU_Pin LL_GPIO_PIN_3
 #define ANODE_MU_GPIO_Port GPIOB
-#define ANODE_SD_Pin GPIO_PIN_4
+#define ANODE_SD_Pin LL_GPIO_PIN_4
 #define ANODE_SD_GPIO_Port GPIOB
-#define ANODE_SU_Pin GPIO_PIN_5
+#define ANODE_SU_Pin LL_GPIO_PIN_5
 #define ANODE_SU_GPIO_Port GPIOB
-#define CATHODE_0_Pin GPIO_PIN_6
+#define CATHODE_0_Pin LL_GPIO_PIN_6
 #define CATHODE_0_GPIO_Port GPIOB
-#define CATHODE_1_Pin GPIO_PIN_7
+#define CATHODE_1_Pin LL_GPIO_PIN_7
 #define CATHODE_1_GPIO_Port GPIOB
-#define CATHODE_2_Pin GPIO_PIN_8
+#define CATHODE_2_Pin LL_GPIO_PIN_8
 #define CATHODE_2_GPIO_Port GPIOB
-#define CATHODE_3_Pin GPIO_PIN_9
+#define CATHODE_3_Pin LL_GPIO_PIN_9
 #define CATHODE_3_GPIO_Port GPIOB
+#ifndef NVIC_PRIORITYGROUP_0
+#define NVIC_PRIORITYGROUP_0         ((uint32_t)0x00000007) /*!< 0 bit  for pre-emption priority,
+                                                                 4 bits for subpriority */
+#define NVIC_PRIORITYGROUP_1         ((uint32_t)0x00000006) /*!< 1 bit  for pre-emption priority,
+                                                                 3 bits for subpriority */
+#define NVIC_PRIORITYGROUP_2         ((uint32_t)0x00000005) /*!< 2 bits for pre-emption priority,
+                                                                 2 bits for subpriority */
+#define NVIC_PRIORITYGROUP_3         ((uint32_t)0x00000004) /*!< 3 bits for pre-emption priority,
+                                                                 1 bit  for subpriority */
+#define NVIC_PRIORITYGROUP_4         ((uint32_t)0x00000003) /*!< 4 bits for pre-emption priority,
+                                                                 0 bit  for subpriority */
+#endif
 
 /* USER CODE BEGIN Private defines */
 
