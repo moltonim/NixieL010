@@ -65,6 +65,8 @@ extern "C" {
 /* USER CODE BEGIN EM */
 #define RX_BUFFER_SIZE 50
 
+extern uint8_t display_buffer[];
+
 extern volatile uint8_t  rx_byte;
 extern volatile char     rx_buffer[RX_BUFFER_SIZE];
 extern volatile uint8_t  rx_index;

@@ -10,6 +10,11 @@
 
 /* Funzione per leggere i tick (il tuo nuovo HAL_GetTick) */
 uint32_t GetTick(void);
+void SetRTC(const char* buf);
+void GetRTC(void);
+
+int RequestTimedateToC3(void);
+
 __attribute__((noinline)) void delay_us(uint32_t us);
 
 #endif /* INC_UTILS_H_ */

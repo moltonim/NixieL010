@@ -46,9 +46,8 @@ volatile uint8_t  rx_complete = 0;
 
 uint8_t current_tube = 0;
 uint8_t display_buffer[6] = {1,2,0,3,2,4};
-//uint8_t display_buffer[6] = {0};
+uint8_t BlinkMode = 0;
 
-LL_RTC_TimeTypeDef myTime = {0};
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,65 +70,6 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-int parsetime(LL_RTC_TimeTypeDef *t, const char* buf)
-{
-//    int n = 0;
-    int p = 0;
-    if (buf[p++] != '@')
-        return -1;
-
-    //d.da_year = (n = (buf[p++]-'0')*1000+(buf[p++]-'0')*100+(buf[p++]-'0')*10+(buf[p++]-'0'));
-    /*
-    n += (buf[p++]-'0')*1000;
-    n += (buf[p++]-'0')*100;
-    //n += (buf[p++]-'0')*10;
-    n += (buf[p++]-'0')*10;
-    n += (buf[p++]-'0');
-    //d->Year = n;
-    n  = (buf[p++]-'0')*10;
-    n += (buf[p++]-'0');
-    //d->Month = n;
-    n  = (buf[p++]-'0')*10;
-    n += buf[p++]-'0';
-    //d->Day = n;
-    */
-    t->Hours  = (buf[p++]-'0')*10;
-    t->Hours += buf[p++]-'0';
-    t->Minutes  = (buf[p++]-'0')*10;
-    t->Minutes += (buf[p++]-'0');
-    t->Seconds  = (buf[p++]-'0')*10;
-    t->Seconds += (buf[p++]-'0');
-
-    return 0;
-}
-
-void SetRTC()
-{
-	LL_RTC_DateTypeDef d_dummy;
-
-	// Valori fissi che l'hardware accetta senza problemi
-	d_dummy.Day     = 1;
-	d_dummy.Month   = LL_RTC_MONTH_JANUARY;
-	d_dummy.Year    = 0; // Anno 2000
-	d_dummy.WeekDay = LL_RTC_WEEKDAY_MONDAY;
-
-	// 1. Sblocca i registri RTC
-	LL_RTC_DisableWriteProtection(RTC);
-	LL_RTC_EnterInitMode(RTC);
-
-	// 2. Scrivi l'ora
-	// Nota: LL_RTC_TIME_FORMAT_AM_OR_24 � necessario
-	LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24, myTime.Hours, myTime.Minutes, myTime.Seconds);
-
-	// 3. Scrivi la data
-	//LL_RTC_DATE_Config(RTC, LL_RTC_WEEKDAY_FRIDAY, myDate.Day, myDate.Month, myDate.Year);
-	LL_RTC_DATE_Config(RTC, d_dummy.WeekDay, d_dummy.Day, d_dummy.Month, d_dummy.Year);
-
-	// 4. Chiudi e riproteggi
-	LL_RTC_ExitInitMode(RTC);
-	LL_RTC_EnableWriteProtection(RTC);
-}
 
 /* USER CODE END 0 */
 
@@ -195,34 +135,44 @@ int main(void)
   */
   //display_buffer;
   HV_ON;
-  int n = 0;
-  int b = 0;
+  uint32_t n = GetTick();
+  int val = 0;
   
   while (1)
   {
 	  if (GetTick() > tickstart )
 	  {
 		  LL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
+		  GetRTC();
 		  tickstart = GetTick() + 200;
 	  }
 
-	  if (!(GetTick()%1000) && !b)
+	  /*if (GetTick() > n)
 	  {
-		  n++;
-		  n %=10;
-		  display_buffer[5] = n;
-		  display_buffer[3] = n;
-		  display_buffer[1] = n;
-		  b = 1;
-	  }
-	  else b = 0;
+		  val++;
+		  val %=10;
+		  display_buffer[5] = val;
+		  display_buffer[3] = val;
+		  display_buffer[1] = val;
+		  n = GetTick() + 1000;
+	  }*/
+	  //else b = 0;
 
-    if (LL_GPIO_IsInputPinSet(Vac_OFF_GPIO_Port, Vac_OFF_Pin))
+//    if (LL_GPIO_IsInputPinSet(Vac_OFF_GPIO_Port, Vac_OFF_Pin))
+    if (VAC_ON)
+    {
+    	HV_ON;
     	LL_GPIO_SetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
+    }
     else
+    {
+    	HV_OFF;
     	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
 
-	/* USER CODE END WHILE */
+    	// L010 to sleep!!!
+    }
+
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
@@ -242,9 +192,9 @@ int main(void)
 		  //if (!strncmp("T20", buf, 3))
 		  if (buf[0] == '@')
 		  {
-			  if (parsetime(&myTime, buf) == 0)
+			  //if (parsetime(&myTime, buf) == 0)
 			  {
-				  SetRTC();
+				  SetRTC(buf);
 			  }
 			  //LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
 			  LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);

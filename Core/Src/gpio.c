@@ -29,10 +29,10 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "gpio.h"
+#include "main.h"
 
 /* USER CODE BEGIN 0 */
-extern uint8_t display_buffer[];
+
 
 /* USER CODE END 0 */
 
@@ -362,7 +362,7 @@ void MX_GPIO_Init(void)
   /**/
   GPIO_InitStruct.Pin = Vac_OFF_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_DOWN;
   LL_GPIO_Init(Vac_OFF_GPIO_Port, &GPIO_InitStruct);
 
   /**/

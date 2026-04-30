@@ -36,7 +36,14 @@ extern "C" {
 #define HV_OFF	LL_GPIO_ResetOutputPin(HV_ENABLE_GPIO_Port, HV_ENABLE_Pin)
 #define HV_ON	LL_GPIO_SetOutputPin(HV_ENABLE_GPIO_Port, HV_ENABLE_Pin)
 
+#define VAC_ON	LL_GPIO_IsInputPinSet(Vac_OFF_GPIO_Port, Vac_OFF_Pin)
+
+#define C3_GETUP	LL_GPIO_SetOutputPin(GETUP_GPIO_Port, GETUP_Pin)
+#define C3_GETDOWN	LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin)
+
 #define	ANODECATHODE_OFF		WRITE_REG(CATHODE_0_GPIO_Port->BRR, 0xFFFF)
+
+
 /* USER CODE END Private defines */
 
 void MX_GPIO_Init(void);
