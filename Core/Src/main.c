@@ -217,7 +217,12 @@ int main(void)
 	  }
 	  else b = 0;
 
-    /* USER CODE END WHILE */
+    if (LL_GPIO_IsInputPinSet(Vac_OFF_GPIO_Port, Vac_OFF_Pin))
+    	LL_GPIO_SetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
+    else
+    	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
+
+	/* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
@@ -354,12 +359,15 @@ void TIM2_ISR_Handle()
 	ANODECATHODE_OFF;
 	//delay_us(0);
 
+	/*
 	// 2. Carica nuova cifra sui catodi
 	uint8_t cifra = display_buffer[current_tube];
 	SetCathode(cifra);
 //
 //	// 3. Accendi anodo corrente
 	EnableAnode(current_tube);
+	*/
+	SetNixie(current_tube);
 
 	// 4. Prossimo tubo
 	current_tube = (current_tube + 1) % 6;

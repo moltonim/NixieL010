@@ -32,8 +32,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN 0 */
-
-#define RITARDO_1				165		// ~1000/6
+extern uint8_t display_buffer[];
 
 /* USER CODE END 0 */
 
@@ -72,6 +71,26 @@ void EnableAnode(uint8_t val)
 	port |= t;
 
 	ANODE_HD_GPIO_Port->BSRR = port;	//set *only* interesting value
+}
+
+
+void SetNixie(uint8_t tube)
+{
+	tube %= 6;
+
+	uint32_t port = 0;
+	uint32_t c = 1;
+	uint32_t a = 1;
+	uint8_t cifra = display_buffer[tube];
+
+	cifra %= 10;
+	c <<= 6;
+	c <<= cifra;
+	a <<= tube;
+	port |= a;
+	port |= c;
+
+	LL_GPIO_WriteOutputPort(ANODE_HD_GPIO_Port, port);
 }
 
 

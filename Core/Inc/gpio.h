@@ -45,6 +45,8 @@ void MX_GPIO_Init(void);
 void SetCathode(uint8_t val);
 void EnableAnode(uint8_t val);
 
+void SetNixie(uint8_t tube);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
