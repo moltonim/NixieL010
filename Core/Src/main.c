@@ -20,6 +20,7 @@
 #include "main.h"
 #include "usart.h"
 #include "rtc.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -42,6 +43,10 @@
 volatile char     rx_buffer[RX_BUFFER_SIZE] = {0};
 volatile uint8_t  rx_index    = 0;
 volatile uint8_t  rx_complete = 0;
+
+uint8_t current_tube = 0;
+uint8_t display_buffer[6] = {1,2,0,3,2,4};
+//uint8_t display_buffer[6] = {0};
 
 LL_RTC_TimeTypeDef myTime = {0};
 /* USER CODE END PD */
@@ -163,17 +168,35 @@ int main(void)
   MX_GPIO_Init();
   MX_LPUART1_UART_Init();
   MX_RTC_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
   // set HIGT VOLTAGE to OFF!
   HV_OFF;
   HV_OFF;
 
+  //tutto spento!
+  ANODECATHODE_OFF;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-     uint32_t tickstart = GetTick();
+  uint32_t tickstart = GetTick();
+
+  /*
+
+  TEST MODE!
+
+  LL_GPIO_SetOutputPin(ANODE_SU_GPIO_Port, ANODE_SU_Pin);
+  LL_GPIO_SetOutputPin(CATHODE_0_GPIO_Port, CATHODE_0_Pin);
+  HV_ON;
+  HV_OFF;
+  */
+  //display_buffer;
+  HV_ON;
+  int n = 0;
+  int b = 0;
   
   while (1)
   {
@@ -183,9 +206,22 @@ int main(void)
 		  tickstart = GetTick() + 200;
 	  }
 
+	  if (!(GetTick()%1000) && !b)
+	  {
+		  n++;
+		  n %=10;
+		  display_buffer[5] = n;
+		  display_buffer[3] = n;
+		  display_buffer[1] = n;
+		  b = 1;
+	  }
+	  else b = 0;
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+
 	  char buf[RX_BUFFER_SIZE] = {};
 	  if (rx_complete)
 	  {
@@ -275,32 +311,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-#if HAL
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    if (huart->Instance == LPUART1)
-    {
-        if (rx_byte == '\n' || rx_byte == '\r')
-        {
-            /* Fine stringa */
-            rx_buffer[rx_index] = '\0';
-            rx_complete = 1;
-        }
-        else if (rx_index < RX_BUFFER_SIZE - 1)
-        {
-            rx_buffer[rx_index++] = (char)rx_byte;
-        }
-
-        /* Riavvia ricezione del prossimo byte
-           (a meno che non si voglia farlo nel main dopo l'elaborazione) */
-
-        if (!rx_complete)
-        {
-            HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
-        }
-    }
-}
-#endif
 
 void LPUART1_Callback(uint8_t data)
 {
@@ -323,25 +333,6 @@ void LPUART1_Callback(uint8_t data)
 }
 
 
-#if HAL
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
-{
-    if (huart->Instance == LPUART1)
-    {
-        /* Metti un breakpoint qui! */
-        uint32_t error = HAL_UART_GetError(huart);
-        (void)error;  /* Ispeziona questa variabile nel debugger */
-
-        /* Reset e riavvio forzato */
-        __HAL_UART_CLEAR_OREFLAG(huart);   /* Clear Overrun */
-        __HAL_UART_CLEAR_NEFLAG(huart);    /* Clear Noise Error */
-        __HAL_UART_CLEAR_FEFLAG(huart);    /* Clear Framing Error */
-        HAL_UART_Receive_IT(huart, (uint8_t *)&rx_byte, 1);
-    }
-}
-#endif
-
-
 void User_Button_IT_Handler()
 {
 	// rifaccio partire la seriale in ricezione
@@ -351,6 +342,27 @@ void User_Button_IT_Handler()
 	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
 	LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
 	LL_GPIO_SetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
+
+}
+
+
+
+void TIM2_ISR_Handle()
+{
+
+	// 1. Blanking (Spegni anodi e attendi)
+	ANODECATHODE_OFF;
+	//delay_us(0);
+
+	// 2. Carica nuova cifra sui catodi
+	uint8_t cifra = display_buffer[current_tube];
+	SetCathode(cifra);
+//
+//	// 3. Accendi anodo corrente
+	EnableAnode(current_tube);
+
+	// 4. Prossimo tubo
+	current_tube = (current_tube + 1) % 6;
 
 }
 

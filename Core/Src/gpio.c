@@ -32,8 +32,6 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN 0 */
-#define	ANODECATHODE_OFF		CATHODE_0_GPIO_Port->BRR  = 0x0000FFFF;
-#define	CATHODE_OFF				CATHODE_0_GPIO_Port->BRR  = 0x0000FFC0;
 
 #define RITARDO_1				165		// ~1000/6
 
@@ -43,75 +41,39 @@
 /* Configure GPIO                                                             */
 /*----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
-void Set_Cathode(uint8_t val)
+void SetCathode(uint8_t val)
 {
-	uint32_t port;
+	uint32_t port = 0;
 	uint32_t t = 1;
 
 	val %= 10;			//Avoid extravalue
 	//if (val == 10) val = 0;
 
-	port =0x0000FFC0;	//remove most sign. unused variable
-	t >>= 6;			//jump anode settings
-	t >>= val;			//
+	//port  = READ_REG(CATHODE_0_GPIO_Port->ODR);
+	//spegne tutti i catodi, lasciia gli anodi
+	//port &= 0x003F;
+	port = 0;
 
-	//GPIOx->BRR  = port;	//reset ALL value
-	port = port;
-	// NOTA: da sostituire con 'CATHODE_OFF' ed inserire un ritardo!
+	t <<= 6;			//jump anode settings
+	t <<= val;			//
+	port |= t;
 
-	/* VALUTARE RITARDO TRA SPEGNIMENTO ED ACCENSIONE. DIPENDE DA NIXIE!  */
-	CATHODE_0_GPIO_Port->BSRR = t;	//set *only* interesting value
+	CATHODE_0_GPIO_Port->BSRR = port;	//set *only* interesting value
 }
 
-void Set_Anode(uint8_t val)
+void EnableAnode(uint8_t val)
 {
-	uint32_t port = ANODE_HD_GPIO_Port->BSRR;
+	uint32_t port = READ_REG(CATHODE_0_GPIO_Port->ODR);
 	uint32_t t = 1;
 
+	port &= ~0x003F;		//lascia acceso OSLO il catodo
 	val %= 6;			//from 0 to 5
-	t >>= val;
-	t |= port;
+	t <<= val;
+	port |= t;
 
-	ANODE_HD_GPIO_Port->BSRR = t;	//set *only* interesting value
+	ANODE_HD_GPIO_Port->BSRR = port;	//set *only* interesting value
 }
 
-
-void Set_NixieTime(uint8_t h, uint8_t m, uint8_t s)
-{
-#if 0
-	Set_Cathode(h/10);
-	Set_Anode(0);
-	HAL_Delay(RITARDO_1);
-	ANODECATHODE_OFF;
-
-	Set_Cathode(h%10);
-	Set_Anode(1);
-	HAL_Delay(RITARDO_1);
-	ANODECATHODE_OFF;
-
-	Set_Cathode(m/10);
-	Set_Anode(2);
-	HAL_Delay(RITARDO_1);
-	ANODECATHODE_OFF;
-
-	Set_Cathode(m%10);
-	Set_Anode(3);
-	HAL_Delay(RITARDO_1);
-	ANODECATHODE_OFF;
-
-	Set_Cathode(s/10);
-	Set_Anode(4);
-	HAL_Delay(RITARDO_1);
-	ANODECATHODE_OFF;
-
-	Set_Cathode(s%10);
-	Set_Anode(5);
-	HAL_Delay(RITARDO_1);
-
-	// L?ultimo OFF non serve: devo solamente aspettare la nuova ora?
-	//ANODECATHODE_OFF;
-#endif
-}
 
 
 void SetSeparator(uint8_t val)

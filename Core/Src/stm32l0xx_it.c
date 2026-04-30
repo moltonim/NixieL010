@@ -162,6 +162,23 @@ void EXTI0_1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+	if(LL_TIM_IsActiveFlag_UPDATE(TIM2))
+	{
+		LL_TIM_ClearFlag_UPDATE(TIM2);
+		TIM2_ISR_Handle();
+	}
+  /* USER CODE END TIM2_IRQn 0 */
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
   * @brief This function handles LPUART1 global interrupt / LPUART1 wake-up interrupt through EXTI line 28.
   */
 void LPUART1_IRQHandler(void)

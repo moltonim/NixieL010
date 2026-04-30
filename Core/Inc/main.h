@@ -39,6 +39,7 @@ extern "C" {
 #include "stm32l0xx_ll_pwr.h"
 #include "stm32l0xx_ll_dma.h"
 #include "stm32l0xx_ll_rtc.h"
+#include "stm32l0xx_ll_tim.h"
 #include "stm32l0xx_ll_gpio.h"
 
 #if defined(USE_FULL_ASSERT)
@@ -76,6 +77,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void User_Button_IT_Handler(void);
 void LPUART1_Callback(uint8_t rx_byte);
+void TIM2_ISR_Handle(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
