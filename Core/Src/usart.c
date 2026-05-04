@@ -66,6 +66,11 @@ void MX_LPUART1_UART_Init(void)
   NVIC_EnableIRQ(LPUART1_IRQn);
 
   /* USER CODE BEGIN LPUART1_Init 1 */
+  // 1. Abilita l'interrupt per il dato ricevuto (RX Not Empty)
+  LL_LPUART_EnableIT_RXNE(LPUART1);
+
+  // 2. Abilita l'interrupt per l'errore di Overrun (opzionale ma consigliato)
+  LL_LPUART_EnableIT_ERROR(LPUART1);
 
   /* USER CODE END LPUART1_Init 1 */
   LPUART_InitStruct.BaudRate = 115200;
@@ -76,6 +81,7 @@ void MX_LPUART1_UART_Init(void)
   LPUART_InitStruct.HardwareFlowControl = LL_LPUART_HWCONTROL_NONE;
   LL_LPUART_Init(LPUART1, &LPUART_InitStruct);
   /* USER CODE BEGIN LPUART1_Init 2 */
+  LL_LPUART_Enable(LPUART1);
   /* USER CODE END LPUART1_Init 2 */
 
 }

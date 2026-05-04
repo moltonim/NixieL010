@@ -23,10 +23,13 @@ uint32_t day, hour, minute, second;
 static int parsetime(LL_RTC_TimeTypeDef *t, const char* buf)
 {
 //    int n = 0;
-    int p = 0;
+    int p = strlen(buf);
+    if (p != 8)
+    	return -2;
+
+    p = 0;
     if (buf[p++] != '@')
         return -1;
-
     //d.da_year = (n = (buf[p++]-'0')*1000+(buf[p++]-'0')*100+(buf[p++]-'0')*10+(buf[p++]-'0'));
     /*
     n += (buf[p++]-'0')*1000;
@@ -42,11 +45,11 @@ static int parsetime(LL_RTC_TimeTypeDef *t, const char* buf)
     n += buf[p++]-'0';
     //d->Day = n;
     */
-    t->Hours  = (buf[p++]-'0')*10;
-    t->Hours += buf[p++]-'0';
-    t->Minutes  = (buf[p++]-'0')*10;
+    t->Hours    = (buf[p++]-'0') * 10;
+    t->Hours   += (buf[p++]-'0');
+    t->Minutes  = (buf[p++]-'0') * 10;
     t->Minutes += (buf[p++]-'0');
-    t->Seconds  = (buf[p++]-'0')*10;
+    t->Seconds  = (buf[p++]-'0') * 10;
     t->Seconds += (buf[p++]-'0');
 
     return 0;
@@ -71,7 +74,7 @@ void SetRTC(const char* buf)
 	d_dummy.Year    = 0; // Anno 2000
 	d_dummy.WeekDay = LL_RTC_WEEKDAY_MONDAY;
 
-	if (!parsetime(&myTime, buf))
+	if (parsetime(&myTime, buf))
 		return;
 
 	// 1. Sblocca i registri RTC

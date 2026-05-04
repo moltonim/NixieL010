@@ -123,6 +123,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint32_t tickstart = GetTick();
+  uint32_t separator = GetTick();
 
   /*
 
@@ -133,11 +134,12 @@ int main(void)
   HV_ON;
   HV_OFF;
   */
-  //display_buffer;
-  HV_ON;
-  uint32_t n = GetTick();
-  int val = 0;
+
+  //HV_ON;
   
+  //uint32_t n = GetTick();
+  //int val = 0;
+
   while (1)
   {
 	  if (GetTick() > tickstart )
@@ -146,6 +148,14 @@ int main(void)
 		  GetRTC();
 		  tickstart = GetTick() + 200;
 	  }
+	  if (GetTick() > separator )
+	  {
+		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
+		  GetRTC();
+		  separator = GetTick() + 999;
+
+	  }
+
 
 	  /*if (GetTick() > n)
 	  {
@@ -192,14 +202,12 @@ int main(void)
 		  //if (!strncmp("T20", buf, 3))
 		  if (buf[0] == '@')
 		  {
-			  //if (parsetime(&myTime, buf) == 0)
-			  {
-				  SetRTC(buf);
-			  }
-			  //LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
-			  LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
+			  SetRTC(buf);
 
-			  LL_GPIO_ResetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
+			  //LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
+			  //LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
+
+			  LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
 			  LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
 		  }
 	  }
@@ -293,9 +301,9 @@ void User_Button_IT_Handler()
 	// rifaccio partire la seriale in ricezione
 	//HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
 
-	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
-	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
-	LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
+//	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
+//	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
+	LL_GPIO_ResetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
 	LL_GPIO_SetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
 
 }
