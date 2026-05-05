@@ -77,13 +77,20 @@ void SetRTC(const char* buf)
 	if (parsetime(&myTime, buf))
 		return;
 
+
+	myTime.Hours = 16;
 	// 1. Sblocca i registri RTC
 	LL_RTC_DisableWriteProtection(RTC);
 	LL_RTC_EnterInitMode(RTC);
 
 	// 2. Scrivi l'ora
 	// Nota: LL_RTC_TIME_FORMAT_AM_OR_24 � necessario
-	LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24, myTime.Hours, myTime.Minutes, myTime.Seconds);
+	//LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24, myTime.Hours, myTime.Minutes, myTime.Seconds);
+	LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24,
+			__LL_RTC_CONVERT_BIN2BCD(myTime.Hours),
+			__LL_RTC_CONVERT_BIN2BCD(myTime.Minutes),
+			__LL_RTC_CONVERT_BIN2BCD(myTime.Seconds)
+	);
 
 	// 3. Scrivi la data
 	//LL_RTC_DATE_Config(RTC, LL_RTC_WEEKDAY_FRIDAY, myDate.Day, myDate.Month, myDate.Year);
