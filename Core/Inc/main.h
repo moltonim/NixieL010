@@ -71,6 +71,7 @@ extern volatile uint8_t  rx_byte;
 extern volatile char     rx_buffer[RX_BUFFER_SIZE];
 extern volatile uint8_t  rx_index;
 extern volatile uint8_t  rx_complete;
+extern volatile uint8_t  C3SyncReq;
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

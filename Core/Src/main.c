@@ -44,6 +44,9 @@ volatile char     rx_buffer[RX_BUFFER_SIZE] = {0};
 volatile uint8_t  rx_index    = 0;
 volatile uint8_t  rx_complete = 0;
 
+volatile uint8_t  C3SyncReq = 0;
+
+
 uint8_t current_tube = 0;
 uint8_t display_buffer[6] = {1,2,0,3,2,4};
 uint8_t BlinkMode = 0;
@@ -135,10 +138,10 @@ int main(void)
   HV_OFF;
   */
 
-  //HV_ON;
+  HV_ON;
   
   //uint32_t n = GetTick();
-  //int val = 0;
+  int val = 0;
 
   while (1)
   {
@@ -152,7 +155,7 @@ int main(void)
 	  {
 		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
 		  GetRTC();
-		  separator = GetTick() + 999;
+		  separator = GetTick() + 500;
 
 	  }
 
@@ -169,6 +172,7 @@ int main(void)
 	  //else b = 0;
 
 //    if (LL_GPIO_IsInputPinSet(Vac_OFF_GPIO_Port, Vac_OFF_Pin))
+/*
     if (VAC_ON)
     {
     	HV_ON;
@@ -181,36 +185,53 @@ int main(void)
 
     	// L010 to sleep!!!
     }
+*/
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
+    val = RequestTimedateToC3();
+    if (val == 0)
+    	val = 0;
+    else if (val == -1)
+    {
+    	//NOK: ricezione sbagliata!!!
+    	val = 0;
+    }
+    else if (val == -2)
+    {
+    	//NOK: Timeout!!!
+    	val = 0;
+    }
 
-	  char buf[RX_BUFFER_SIZE] = {};
-	  if (rx_complete)
-	  {
-		  __disable_irq(); // Disabilita tutti gli interrupt
-		  rx_complete = 0;
-		  memcpy(buf, (const char*)&rx_buffer[0], rx_index);
-		  rx_index = 0;
-		  __enable_irq();  // Riabilita gli interrupt
+
+#if 0
+    char buf[RX_BUFFER_SIZE] = {};
+    if (rx_complete)
+    {
+    	__disable_irq(); // Disabilita tutti gli interrupt
+    	rx_complete = 0;
+    	memcpy(buf, (const char*)&rx_buffer[0], rx_index);
+    	rx_index = 0;
+    	__enable_irq();  // Riabilita gli interrupt
 
 
-		  //HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
+    	//HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
 
-		  //if (!strncmp("T20", buf, 3))
-		  if (buf[0] == '@')
-		  {
-			  SetRTC(buf);
+    	//if (!strncmp("T20", buf, 3))
+    	if (buf[0] == '@')
+    	{
+    		SetRTC(buf);
 
-			  //LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
-			  //LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
+    		//LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
+    		//LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
 
-			  LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
-			  LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
-		  }
-	  }
+    		LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
+    		LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
+    	}
+    }
+#endif
   }
   /* USER CODE END 3 */
 }
@@ -298,14 +319,9 @@ void LPUART1_Callback(uint8_t data)
 
 void User_Button_IT_Handler()
 {
-	// rifaccio partire la seriale in ricezione
-	//HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
+	C3SyncReq = 1;
 
-//	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
-//	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
-	LL_GPIO_ResetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
-	LL_GPIO_SetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
-
+	LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
 }
 
 

@@ -11,7 +11,7 @@
 #include "tim.h"
 #include "gpio.h"
 
-#define C3_TIMEOUTms	5000
+#define C3_TIMEOUTms	15000
 
 
 volatile uint32_t ms_ticks = 0;
@@ -64,7 +64,7 @@ uint32_t GetTick(void)
 
 
 
-void SetRTC(const char* buf)
+int  SetRTC(const char* buf)
 {
 	LL_RTC_DateTypeDef d_dummy;
 
@@ -75,10 +75,8 @@ void SetRTC(const char* buf)
 	d_dummy.WeekDay = LL_RTC_WEEKDAY_MONDAY;
 
 	if (parsetime(&myTime, buf))
-		return;
+		return -1;
 
-
-	myTime.Hours = 16;
 	// 1. Sblocca i registri RTC
 	LL_RTC_DisableWriteProtection(RTC);
 	LL_RTC_EnterInitMode(RTC);
@@ -99,6 +97,7 @@ void SetRTC(const char* buf)
 	// 4. Chiudi e riproteggi
 	LL_RTC_ExitInitMode(RTC);
 	LL_RTC_EnableWriteProtection(RTC);
+	return 0;
 }
 
 
@@ -134,19 +133,26 @@ void GetRTC(void)
 
 int RequestTimedateToC3(void)
 {
-	if (hour == 2 && !minute && !second)
+
+	if (!C3SyncReq)
 	{
-		//sono le 2 di notte: cerco data/ora
-		if (day != 2)
-			return 1;
+		if ((hour == 2 && !minute && !second))
+		{
+			//sono le 2 di notte: cerco data/ora
+			if (day != 2)
+				return 1;
+			LL_GPIO_SetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
+		}
+		else return 0;
 	}
 
+	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
 	//disable TIM2
 	DISABLE_TIM2;
 	//switch HiV OFF
 	HV_OFF;
 	//wait a little
-	LL_mDelay(50);
+	LL_mDelay(500);
 	//Ask C3 to getup
 	C3_GETUP;
 	int ms = GetTick() + C3_TIMEOUTms;
@@ -171,14 +177,14 @@ int RequestTimedateToC3(void)
 			{
 				//if (parsetime(&myTime, buf) == 0)
 				{
-					SetRTC(buf);
+					if (SetRTC(buf))
+						return -1;
 				}
 				rx_complete = 2;
-				//LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
-				LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
 
+				LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
 				LL_GPIO_ResetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
-				LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
+				LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
 
 				break;
 			}
@@ -187,7 +193,9 @@ int RequestTimedateToC3(void)
 
 	//C3 goto sleep
 	C3_GETDOWN;
-
+	C3SyncReq = 0;
+	LL_mDelay(300);
+	ENABLE_TIM2;
 	//turn /HV on
 	HV_ON;
 
