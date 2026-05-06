@@ -55,7 +55,9 @@ uint8_t BlinkMode = 0;
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+//#define FIRST_STARTUP_DELAY		(61*1000+10)
+#define FIRST_STARTUP_DELAY		(11*1000)
+#define SEPARATOR_DELAYms		500
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -140,7 +142,7 @@ int main(void)
 
   HV_ON;
   
-  //uint32_t n = GetTick();
+  uint32_t startup = 0;
   int val = 0;
 
   while (1)
@@ -155,37 +157,12 @@ int main(void)
 	  {
 		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
 		  GetRTC();
-		  separator = GetTick() + 500;
-
+		  separator = GetTick() + SEPARATOR_DELAYms;
 	  }
 
+	  if (startup == 0 && GetTick() > FIRST_STARTUP_DELAY )
+		  C3SyncReq = 1;
 
-	  /*if (GetTick() > n)
-	  {
-		  val++;
-		  val %=10;
-		  display_buffer[5] = val;
-		  display_buffer[3] = val;
-		  display_buffer[1] = val;
-		  n = GetTick() + 1000;
-	  }*/
-	  //else b = 0;
-
-//    if (LL_GPIO_IsInputPinSet(Vac_OFF_GPIO_Port, Vac_OFF_Pin))
-/*
-    if (VAC_ON)
-    {
-    	HV_ON;
-    	LL_GPIO_SetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
-    }
-    else
-    {
-    	HV_OFF;
-    	LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
-
-    	// L010 to sleep!!!
-    }
-*/
 
     /* USER CODE END WHILE */
 
@@ -193,7 +170,10 @@ int main(void)
 
     val = RequestTimedateToC3();
     if (val == 0)
+    {
     	val = 0;
+    	startup = 2;
+    }
     else if (val == -1)
     {
     	//NOK: ricezione sbagliata!!!
@@ -206,32 +186,6 @@ int main(void)
     }
 
 
-#if 0
-    char buf[RX_BUFFER_SIZE] = {};
-    if (rx_complete)
-    {
-    	__disable_irq(); // Disabilita tutti gli interrupt
-    	rx_complete = 0;
-    	memcpy(buf, (const char*)&rx_buffer[0], rx_index);
-    	rx_index = 0;
-    	__enable_irq();  // Riabilita gli interrupt
-
-
-    	//HAL_UART_Receive_IT(&hlpuart1, (uint8_t *)&rx_byte, 1);
-
-    	//if (!strncmp("T20", buf, 3))
-    	if (buf[0] == '@')
-    	{
-    		SetRTC(buf);
-
-    		//LL_GPIO_TogglePin(LEDY_GPIO_Port, LEDY_Pin);
-    		//LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
-
-    		LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
-    		LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin);
-    	}
-    }
-#endif
   }
   /* USER CODE END 3 */
 }

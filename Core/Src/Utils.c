@@ -143,7 +143,7 @@ int RequestTimedateToC3(void)
 				return 1;
 			LL_GPIO_SetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
 		}
-		else return 0;
+		else return 1;
 	}
 
 	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
