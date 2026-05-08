@@ -15,8 +15,9 @@
 
 
 volatile uint32_t ms_ticks = 0;
-LL_RTC_TimeTypeDef myTime = {0};
 
+uint8_t Event[3] = {};
+LL_RTC_TimeTypeDef myTime = {0};
 uint32_t day, hour, minute, second;
 
 
@@ -141,12 +142,10 @@ int RequestTimedateToC3(void)
 			//sono le 2 di notte: cerco data/ora
 			if (day != 2)
 				return 1;
-			LL_GPIO_SetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
 		}
 		else return 1;
 	}
 
-	LL_GPIO_ResetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
 	//disable TIM2
 	DISABLE_TIM2;
 	//switch HiV OFF
@@ -182,10 +181,6 @@ int RequestTimedateToC3(void)
 				}
 				rx_complete = 2;
 
-				LL_GPIO_SetOutputPin(LED_G_GPIO_Port, LED_G_Pin);
-				LL_GPIO_ResetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
-				LL_GPIO_ResetOutputPin(LED_Y_GPIO_Port, LED_Y_Pin);
-
 				break;
 			}
 		}
@@ -219,6 +214,33 @@ int RequestTimedateToC3(void)
 	return -10;
 }
 
+
+uint8_t HadleButtons()
+{
+	static uint32_t ButtonPin[3] = {
+			BTTN1_Pin,
+			BTTN2_Pin,
+			BTTN3_Pin
+	};
+	static uint32_t bttn[3];
+	uint32_t n;
+
+	for (int i = 0; i <(sizeof(ButtonPin)/sizeof(ButtonPin[0])); i++)
+	{
+//		n = LL_GPIO_IsInputPinSet(BTTN1_GPIO_Port, ButtonPin[i]);
+		n = LL_GPIO_IsInputPinSet(BTTN1_GPIO_Port, ButtonPin[i]);
+		if (!n && !bttn[i])
+			bttn[i] = GetTick() + 1500;
+		else if (n)
+			bttn[i] = 0;
+
+		if (bttn[i] && GetTick() > bttn[i] && !Event[1])
+		{
+			Event[i] = 1;
+		}
+	}
+	return Event[0] | (Event[1]<<1) | (Event[2]<<2);
+}
 
 
 __attribute__((noinline)) // Impedisce al compilatore di integrare la funzione (cambierebbe i tempi)

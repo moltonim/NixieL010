@@ -149,7 +149,6 @@ int main(void)
   {
 	  if (GetTick() > tickstart )
 	  {
-		  LL_GPIO_TogglePin(LED_G_GPIO_Port, LED_G_Pin);
 		  GetRTC();
 		  tickstart = GetTick() + 200;
 	  }
@@ -162,6 +161,22 @@ int main(void)
 
 	  if (startup == 0 && GetTick() > FIRST_STARTUP_DELAY )
 		  C3SyncReq = 1;
+
+
+	  HadleButtons();
+
+	  if (Event[0])
+	  {
+		  LL_GPIO_SetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);
+		  C3SyncReq = 1;
+		  Event[0] = 0;
+	  }
+
+	  if (Event[1])
+	  {
+		  LL_GPIO_ResetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);
+		  Event[1] = 0;
+	  }
 
 
     /* USER CODE END WHILE */
@@ -270,12 +285,12 @@ void LPUART1_Callback(uint8_t data)
 	}
 }
 
-
+//To be removed (?)
 void User_Button_IT_Handler()
 {
 	C3SyncReq = 1;
 
-	LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
+//	LL_GPIO_SetOutputPin(LED_R_GPIO_Port, LED_R_Pin);
 }
 
 
@@ -287,19 +302,10 @@ void TIM2_ISR_Handle()
 	ANODECATHODE_OFF;
 	//delay_us(0);
 
-	/*
-	// 2. Carica nuova cifra sui catodi
-	uint8_t cifra = display_buffer[current_tube];
-	SetCathode(cifra);
-//
-//	// 3. Accendi anodo corrente
-	EnableAnode(current_tube);
-	*/
 	SetNixie(current_tube);
 
-	// 4. Prossimo tubo
+	// 2. Prossimo tubo
 	current_tube = (current_tube + 1) % 6;
-
 }
 
 /* USER CODE END 4 */

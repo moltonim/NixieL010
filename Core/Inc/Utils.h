@@ -10,6 +10,9 @@
 
 /* Funzione per leggere i tick (il tuo nuovo HAL_GetTick) */
 uint32_t GetTick(void);
+extern uint8_t Event[];
+
+uint8_t HadleButtons();
 void SetRTC(const char* buf);
 void GetRTC(void);
 
