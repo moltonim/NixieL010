@@ -1,0 +1,33 @@
+Appunti per programma NIXIE:
+
+Ho tre pulsanti:
+Setup 
+UP (centrale)
+Enter
+
+Ipotesi di configurazione tasti:
+Tengo premuto UP per 1.5 secondi: richiesta di sync con S3
+
+Tengo premuto tasto Setup + Enter:
+COuntdown da 10 a 0, se non premo nulla:
+	AZZERO la rete wifi.
+	Continuo con la "vecchia" data/ora.
+	
+Ogni 2 giorni, alle 2:00 mi collego ed aggiorno data/ora (mettendo il gionro == 1)
+
+Cosa succede se vado in timeout dopo i 2 giorni:
+	Nulla per 10 giorni (5 volte).
+		Poi i secondi vanno di due in due
+		
+	COme gestisco la mancanza di sync con il C3 ??
+		
+*LowPower:
+
+Quando manca la tensione io vado in batteria, ma subito mi accordo quindi:
+	Spengo l'alto voltaggio (che devo metter ein automatico nella routine di interrupt?)
+	
+	L'RTC deve continuare a "girare", quindi devo selezionare la modalità lowpow che mi mantenga l'RTC
+	Inoltre devo "sveglairmi" quando la tensione ritorma, e rifare tutto il percorso.
+	* devo cercare "al più presto" il sync con C3 oppure attendo?
+	* sveglia su interrupt di presenza tensione oppure ciclo di "sveglia" ogni 2/3 sec per vedere se c'è tensione.
+	

@@ -12,6 +12,7 @@
 #include "gpio.h"
 
 #define C3_TIMEOUTms	15000
+#define COUNTDOWNs		11
 
 
 volatile uint32_t ms_ticks = 0;
@@ -100,6 +101,42 @@ int  SetRTC(const char* buf)
 	LL_RTC_EnableWriteProtection(RTC);
 	return 0;
 }
+
+
+//countdown in secondi: mostra un conuntdown sino a spegnimento!
+void CountDown(int sec)
+{
+	static uint32_t dwn;
+
+	if (!dwn)
+	{
+		dwn = GetTick();
+		dwn /= 1000;		//to seconds
+		dwn %= (24*3600);	//remove day(s)
+		return;
+	}
+
+
+/*
+	hour   = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_HOUR(temp_time));
+	minute = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MINUTE(temp_time));
+	second = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_SECOND(temp_time));
+*/
+	DISABLE_TIM2;
+	display_buffer[0] = hour/10;
+	display_buffer[1] = hour%10;
+
+	display_buffer[2] = minute/10;
+	display_buffer[3] = minute%10;
+
+	display_buffer[4] = second/10;
+	display_buffer[5] = second%10;
+	ENABLE_TIM2;
+
+
+}
+
+
 
 
 void GetRTC(void)
@@ -215,7 +252,7 @@ int RequestTimedateToC3(void)
 }
 
 
-uint8_t HadleButtons()
+uint8_t HandleButtons()
 {
 	static uint32_t ButtonPin[3] = {
 			BTTN1_Pin,

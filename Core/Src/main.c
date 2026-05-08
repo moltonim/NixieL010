@@ -155,7 +155,7 @@ int main(void)
 	  if (GetTick() > separator )
 	  {
 		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
-		  GetRTC();
+		  //GetRTC();
 		  separator = GetTick() + SEPARATOR_DELAYms;
 	  }
 
@@ -163,7 +163,7 @@ int main(void)
 		  C3SyncReq = 1;
 
 
-	  HadleButtons();
+	  HandleButtons();
 
 	  if (Event[0])
 	  {

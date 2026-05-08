@@ -40,39 +40,6 @@
 /* Configure GPIO                                                             */
 /*----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
-void SetCathode(uint8_t val)
-{
-	uint32_t port = 0;
-	uint32_t t = 1;
-
-	val %= 10;			//Avoid extravalue
-	//if (val == 10) val = 0;
-
-	//port  = READ_REG(CATHODE_0_GPIO_Port->ODR);
-	//spegne tutti i catodi, lasciia gli anodi
-	//port &= 0x003F;
-	port = 0;
-
-	t <<= 6;			//jump anode settings
-	t <<= val;			//
-	port |= t;
-
-	CATHODE_0_GPIO_Port->BSRR = port;	//set *only* interesting value
-}
-
-void EnableAnode(uint8_t val)
-{
-	uint32_t port = READ_REG(CATHODE_0_GPIO_Port->ODR);
-	uint32_t t = 1;
-
-	port &= ~0x003F;		//lascia acceso OSLO il catodo
-	val %= 6;			//from 0 to 5
-	t <<= val;
-	port |= t;
-
-	ANODE_HD_GPIO_Port->BSRR = port;	//set *only* interesting value
-}
-
 
 void SetNixie(uint8_t tube)
 {

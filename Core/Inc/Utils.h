@@ -12,7 +12,7 @@
 uint32_t GetTick(void);
 extern uint8_t Event[];
 
-uint8_t HadleButtons();
+uint8_t HandleButtons();
 void SetRTC(const char* buf);
 void GetRTC(void);
 

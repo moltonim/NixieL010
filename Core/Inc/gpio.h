@@ -49,8 +49,6 @@ extern "C" {
 void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void SetCathode(uint8_t val);
-void EnableAnode(uint8_t val);
 
 void SetNixie(uint8_t tube);
 
