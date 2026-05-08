@@ -48,7 +48,7 @@ void SetNixie(uint8_t tube)
 	uint32_t port = 0;
 	uint32_t c = 1;
 	uint32_t a = 1;
-	uint8_t cifra = display_buffer[tube];
+	uint8_t cifra = NixieDisplay.display_buffer[tube];
 
 	cifra %= 10;
 	c <<= 6;

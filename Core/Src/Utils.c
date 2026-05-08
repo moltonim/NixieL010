@@ -123,14 +123,14 @@ void CountDown(int sec)
 	second = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_SECOND(temp_time));
 */
 	DISABLE_TIM2;
-	display_buffer[0] = hour/10;
-	display_buffer[1] = hour%10;
+	NixieDisplay.display_buffer[0] = hour/10;
+	NixieDisplay.display_buffer[1] = hour%10;
 
-	display_buffer[2] = minute/10;
-	display_buffer[3] = minute%10;
+	NixieDisplay.display_buffer[2] = minute/10;
+	NixieDisplay.display_buffer[3] = minute%10;
 
-	display_buffer[4] = second/10;
-	display_buffer[5] = second%10;
+	NixieDisplay.display_buffer[4] = second/10;
+	NixieDisplay.display_buffer[5] = second%10;
 	ENABLE_TIM2;
 
 
@@ -156,14 +156,14 @@ void GetRTC(void)
 	second = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_SECOND(temp_time));
 
 	DISABLE_TIM2;
-	display_buffer[0] = hour/10;
-	display_buffer[1] = hour%10;
+	NixieDisplay.display_buffer[0] = hour/10;
+	NixieDisplay.display_buffer[1] = hour%10;
 
-	display_buffer[2] = minute/10;
-	display_buffer[3] = minute%10;
+	NixieDisplay.display_buffer[2] = minute/10;
+	NixieDisplay.display_buffer[3] = minute%10;
 
-	display_buffer[4] = second/10;
-	display_buffer[5] = second%10;
+	NixieDisplay.display_buffer[4] = second/10;
+	NixieDisplay.display_buffer[5] = second%10;
 	ENABLE_TIM2;
 }
 
@@ -226,6 +226,7 @@ int RequestTimedateToC3(void)
 	//C3 goto sleep
 	C3_GETDOWN;
 	C3SyncReq = 0;
+	LL_GPIO_ResetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);	//force reset of C£'s request
 	LL_mDelay(300);
 	ENABLE_TIM2;
 	//turn /HV on

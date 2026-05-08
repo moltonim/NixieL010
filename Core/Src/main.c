@@ -46,10 +46,7 @@ volatile uint8_t  rx_complete = 0;
 
 volatile uint8_t  C3SyncReq = 0;
 
-
-uint8_t current_tube = 0;
-uint8_t display_buffer[6] = {1,2,0,3,2,4};
-uint8_t BlinkMode = 0;
+_NixieDisplay NixieDisplay;
 
 /* USER CODE END PD */
 
@@ -147,15 +144,14 @@ int main(void)
 
   while (1)
   {
-	  if (GetTick() > tickstart )
+	  if (GetTick() > tickstart )	//refresh value from RTC
 	  {
 		  GetRTC();
 		  tickstart = GetTick() + 200;
 	  }
-	  if (GetTick() > separator )
+	  if (GetTick() > separator )	//blink 'leds'
 	  {
 		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
-		  //GetRTC();
 		  separator = GetTick() + SEPARATOR_DELAYms;
 	  }
 
@@ -297,7 +293,7 @@ void User_Button_IT_Handler()
 
 void TIM2_ISR_Handle()
 {
-
+	static uint8_t current_tube = 0;
 	// 1. Blanking (Spegni anodi e attendi)
 	ANODECATHODE_OFF;
 	//delay_us(0);

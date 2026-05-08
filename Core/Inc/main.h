@@ -53,7 +53,11 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef struct {
+//	uint8_t display_buffer[6] = {1,2,0,3,2,4};
+	uint8_t display_buffer[6];
+	uint8_t BlinkMode;
+} _NixieDisplay;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -65,7 +69,8 @@ extern "C" {
 /* USER CODE BEGIN EM */
 #define RX_BUFFER_SIZE 50
 
-extern uint8_t display_buffer[];
+//extern uint8_t display_buffer[];
+extern _NixieDisplay NixieDisplay;
 
 extern volatile uint8_t  rx_byte;
 extern volatile char     rx_buffer[RX_BUFFER_SIZE];
