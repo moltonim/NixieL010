@@ -146,10 +146,10 @@ void GetRTC(void)
 	uint32_t temp_time = LL_RTC_TIME_Get(RTC);
 
 	// 2. IMPORTANTE: Leggi sempre la DATA dopo il tempo per sbloccare i registri ombra
-	(void)LL_RTC_DATE_Get(RTC);
+	uint32_t temp_date = LL_RTC_DATE_Get(RTC);
 
 	// 3. Estrai i valori usando le macro LL e converti in decimale (Binario)
-	//day = __LL_RTC_GET_DAY(temp_time);
+	day = __LL_RTC_GET_DAY(temp_date);
 
 	hour   = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_HOUR(temp_time));
 	minute = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MINUTE(temp_time));
@@ -177,7 +177,7 @@ int RequestTimedateToC3(void)
 		if ((hour == 2 && !minute && !second))
 		{
 			//sono le 2 di notte: cerco data/ora
-			if (day != 2)
+			if (day != 3)
 				return 1;
 		}
 		else return 1;
