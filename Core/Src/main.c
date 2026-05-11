@@ -83,8 +83,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-//	NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
-	NixieDisplay.DisplayMode = DISPLAYMODE_CDOWN;
+	NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
+//	NixieDisplay.DisplayMode = DISPLAYMODE_CDOWN;		//test mode only!
 	NixieDisplay.cdown = (10 * 1000) - 1;
   /* USER CODE END 1 */
 
@@ -168,18 +168,14 @@ int main(void)
 
 	  HandleButtons();
 
-	  if (Event[0])
+	  if (Event[1])
 	  {
 		  LL_GPIO_SetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);
 		  C3SyncReq = 1;
-		  Event[0] = 0;
-	  }
-
-	  if (Event[1])
-	  {
-		  LL_GPIO_ResetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);
 		  Event[1] = 0;
 	  }
+
+
 
 
     /* USER CODE END WHILE */
