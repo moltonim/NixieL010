@@ -104,36 +104,38 @@ int  SetRTC(const char* buf)
 
 
 //countdown in secondi: mostra un conuntdown sino a spegnimento!
-void CountDown(int sec)
+void CountDown(void)
 {
 	static uint32_t dwn;
 
 	if (!dwn)
 	{
 		dwn = GetTick();
-		dwn /= 1000;		//to seconds
-		dwn %= (24*3600);	//remove day(s)
+//		dwn /= 1000;		//to seconds
+//		dwn %= (24*3600);	//remove day(s)
+		dwn += NixieDisplay.cdown ;		//starting from 12 sec (11?)
+		return;
+	}
+	uint32_t n = dwn - GetTick();
+	if (n > 0x00FFFFFF)		//< 0
+	{
+		NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
+		dwn = 0;
 		return;
 	}
 
+	n /= 1000;		//to seconds
+	n %= (24*3600);	//remove day(s)
 
-/*
-	hour   = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_HOUR(temp_time));
-	minute = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MINUTE(temp_time));
-	second = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_SECOND(temp_time));
-*/
+
 	DISABLE_TIM2;
-	NixieDisplay.display_buffer[0] = hour/10;
-	NixieDisplay.display_buffer[1] = hour%10;
 
-	NixieDisplay.display_buffer[2] = minute/10;
-	NixieDisplay.display_buffer[3] = minute%10;
+	NixieDisplay.display_buffer[3] = n%10;
+	if (!n)
+		n = 1;
+	NixieDisplay.display_buffer[2] = n/10;
 
-	NixieDisplay.display_buffer[4] = second/10;
-	NixieDisplay.display_buffer[5] = second%10;
 	ENABLE_TIM2;
-
-
 }
 
 

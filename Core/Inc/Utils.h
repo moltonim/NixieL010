@@ -15,6 +15,7 @@ extern uint8_t Event[];
 uint8_t HandleButtons();
 void SetRTC(const char* buf);
 void GetRTC(void);
+void CountDown(void);
 
 int RequestTimedateToC3(void);
 

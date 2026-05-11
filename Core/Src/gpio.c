@@ -61,6 +61,31 @@ void SetNixie(uint8_t tube)
 }
 
 
+void SetNixieCDown(uint8_t tube)
+{
+	tube %= 6;
+
+	uint32_t port = 0;
+	uint32_t c = 1;
+	uint32_t a = 1;
+	uint8_t cifra = NixieDisplay.display_buffer[tube];
+
+	if (tube != 2 && tube != 3)
+		return;
+
+	cifra %= 10;
+	c <<= (6);	//salta i secondi
+	c <<= cifra;
+	a <<= tube;
+	a &= 0x000C;	//Cancella quelli che sono ore e secondi. SOlo i minuti!
+	port |= (a|c);
+
+	LL_GPIO_WriteOutputPort(ANODE_HD_GPIO_Port, port);
+}
+
+
+
+
 /* USER CODE END 1 */
 
 /** Configure pins as

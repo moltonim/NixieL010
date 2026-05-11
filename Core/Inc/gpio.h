@@ -51,6 +51,7 @@ void MX_GPIO_Init(void);
 /* USER CODE BEGIN Prototypes */
 
 void SetNixie(uint8_t tube);
+void SetNixieCDown(uint8_t tube);
 
 /* USER CODE END Prototypes */
 

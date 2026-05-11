@@ -83,7 +83,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+//	NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
+	NixieDisplay.DisplayMode = DISPLAYMODE_CDOWN;
+	NixieDisplay.cdown = (10 * 1000) - 1;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -146,9 +148,14 @@ int main(void)
   {
 	  if (GetTick() > tickstart )	//refresh value from RTC
 	  {
-		  GetRTC();
+		  switch (NixieDisplay.DisplayMode)	{
+		  		default:
+		  		case DISPLAYMODE_NORMAL:	GetRTC();	break;
+		  		case DISPLAYMODE_CDOWN:		CountDown();break;
+		  }
 		  tickstart = GetTick() + 200;
 	  }
+
 	  if (GetTick() > separator )	//blink 'leds'
 	  {
 		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
@@ -298,7 +305,11 @@ void TIM2_ISR_Handle()
 	ANODECATHODE_OFF;
 	//delay_us(0);
 
-	SetNixie(current_tube);
+	switch (NixieDisplay.DisplayMode)	{
+		default:
+		case DISPLAYMODE_NORMAL:	SetNixie(current_tube);			break;
+		case DISPLAYMODE_CDOWN:		SetNixieCDown(current_tube);	break;
+	}
 
 	// 2. Prossimo tubo
 	current_tube = (current_tube + 1) % 6;

@@ -53,10 +53,16 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+typedef enum {
+	DISPLAYMODE_NORMAL = 0,
+	DISPLAYMODE_CDOWN,
+	DISPLAYMODE_BLINK_S
+}_DisplayMode;
 typedef struct {
-//	uint8_t display_buffer[6] = {1,2,0,3,2,4};
 	uint8_t display_buffer[6];
-	uint8_t BlinkMode;
+	//uint8_t BlinkMode;
+	_DisplayMode DisplayMode;
+	uint32_t cdown;
 } _NixieDisplay;
 /* USER CODE END ET */
 
@@ -69,7 +75,6 @@ typedef struct {
 /* USER CODE BEGIN EM */
 #define RX_BUFFER_SIZE 50
 
-//extern uint8_t display_buffer[];
 extern _NixieDisplay NixieDisplay;
 
 extern volatile uint8_t  rx_byte;
