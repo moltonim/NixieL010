@@ -61,6 +61,7 @@ typedef enum {
 typedef struct {
 	uint8_t display_buffer[6];
 	//uint8_t BlinkMode;
+	uint32_t EvenSecs;			//NON mostro i secondi pari dopo 5 errori
 	_DisplayMode DisplayMode;
 	uint32_t cdown;
 } _NixieDisplay;

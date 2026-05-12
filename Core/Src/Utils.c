@@ -10,14 +10,14 @@
 #include "main.h"
 #include "tim.h"
 #include "gpio.h"
+#include "Utils.h"
 
 #define C3_TIMEOUTms	15000
 #define COUNTDOWNs		11
 
-
 volatile uint32_t ms_ticks = 0;
 
-uint8_t Event[3] = {};
+uint8_t Event[NUMEVENT];
 LL_RTC_TimeTypeDef myTime = {0};
 uint32_t day, hour, minute, second;
 
@@ -103,6 +103,41 @@ int  SetRTC(const char* buf)
 }
 
 
+uint8_t HandleButtons( uint8_t reset)
+{
+	static uint32_t ButtonPin[3] = {
+			BTTN1_Pin,
+			BTTN2_Pin,
+			BTTN3_Pin
+	};
+	static uint32_t bttn[3];
+	uint32_t n;
+
+	if (reset)
+	{
+		memset(bttn, 0, sizeof(bttn));
+		memset(Event, 0, sizeof(Event));
+		return 0;
+	}
+
+	for (int i = 0; i <(sizeof(ButtonPin)/sizeof(ButtonPin[0])); i++)
+	{
+//		n = LL_GPIO_IsInputPinSet(BTTN1_GPIO_Port, ButtonPin[i]);
+		n = LL_GPIO_IsInputPinSet(BTTN1_GPIO_Port, ButtonPin[i]);
+		if (!n && !bttn[i])
+			bttn[i] = GetTick() + 1500;
+		else if (n)
+			bttn[i] = 0;
+
+		if (bttn[i] && GetTick() > bttn[i] && !Event[1])
+		{
+			Event[i] = 1;
+		}
+	}
+	return Event[0] | (Event[1]<<1) | (Event[2]<<2);
+}
+
+
 //countdown in secondi: mostra un conuntdown sino a spegnimento!
 void CountDown(void)
 {
@@ -117,7 +152,15 @@ void CountDown(void)
 		return;
 	}
 	uint32_t n = dwn - GetTick();
+	uint8_t ev = 0;
 	if (n > 0x00FFFFFF)		//< 0
+	{
+		Event[3] = 1;
+		return;
+	}
+
+	ev = HandleButtons(0);
+	if (ev != 5)
 	{
 		NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
 		dwn = 0;
@@ -166,7 +209,42 @@ void GetRTC(void)
 
 	NixieDisplay.display_buffer[4] = second/10;
 	NixieDisplay.display_buffer[5] = second%10;
+	if (NixieDisplay.EvenSecs >= 5)
+		NixieDisplay.display_buffer[5] &= 0xFE;
+
 	ENABLE_TIM2;
+}
+
+
+
+int EraseSetupC3(void)
+{
+	//disable TIM2
+	DISABLE_TIM2;
+	//switch HiV OFF
+	HV_OFF;
+	//wait a little
+	LL_mDelay(500);
+	//Set ERASE on C3:
+	C3_RESET_REQ;
+	//Ask C3 to getup
+	C3_GETUP;
+
+	//wait a little
+	LL_mDelay(500);
+	//Ebd ERASE on C3:
+	C3_RESET_END;
+
+	//Ensure clock in normal mode:
+	NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
+
+	//
+	//	NOTA: Lascio lorario precedente!
+	//
+
+	ENABLE_TIM2;
+
+	return 0;
 }
 
 
@@ -180,7 +258,10 @@ int RequestTimedateToC3(void)
 		{
 			//sono le 2 di notte: cerco data/ora
 			if (day != 3)
-				return 1;
+				return 0;
+			else
+				C3SyncReq = 1;
+
 		}
 		else return 1;
 	}
@@ -228,7 +309,7 @@ int RequestTimedateToC3(void)
 	//C3 goto sleep
 	C3_GETDOWN;
 	C3SyncReq = 0;
-	LL_GPIO_ResetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);	//force reset of C£'s request
+	C3_RESET_END;	//force reset of C£'s request
 	LL_mDelay(300);
 	ENABLE_TIM2;
 	//turn /HV on
@@ -255,32 +336,7 @@ int RequestTimedateToC3(void)
 }
 
 
-uint8_t HandleButtons()
-{
-	static uint32_t ButtonPin[3] = {
-			BTTN1_Pin,
-			BTTN2_Pin,
-			BTTN3_Pin
-	};
-	static uint32_t bttn[3];
-	uint32_t n;
 
-	for (int i = 0; i <(sizeof(ButtonPin)/sizeof(ButtonPin[0])); i++)
-	{
-//		n = LL_GPIO_IsInputPinSet(BTTN1_GPIO_Port, ButtonPin[i]);
-		n = LL_GPIO_IsInputPinSet(BTTN1_GPIO_Port, ButtonPin[i]);
-		if (!n && !bttn[i])
-			bttn[i] = GetTick() + 1500;
-		else if (n)
-			bttn[i] = 0;
-
-		if (bttn[i] && GetTick() > bttn[i] && !Event[1])
-		{
-			Event[i] = 1;
-		}
-	}
-	return Event[0] | (Event[1]<<1) | (Event[2]<<2);
-}
 
 
 __attribute__((noinline)) // Impedisce al compilatore di integrare la funzione (cambierebbe i tempi)

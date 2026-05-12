@@ -55,6 +55,7 @@ _NixieDisplay NixieDisplay;
 //#define FIRST_STARTUP_DELAY		(61*1000+10)
 #define FIRST_STARTUP_DELAY		(11*1000)
 #define SEPARATOR_DELAYms		500
+#define C3FAULT_RETRYms			((3*60)*1000)
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -128,20 +129,21 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   uint32_t tickstart = GetTick();
   uint32_t separator = GetTick();
+  uint32_t temp      = GetTick();
 
-  /*
-
+#if 0
   TEST MODE!
 
   LL_GPIO_SetOutputPin(ANODE_SU_GPIO_Port, ANODE_SU_Pin);
   LL_GPIO_SetOutputPin(CATHODE_0_GPIO_Port, CATHODE_0_Pin);
   HV_ON;
   HV_OFF;
-  */
-
+#endif
   HV_ON;
   
   uint32_t startup = 0;
+  uint8_t ev = 0;
+  uint8_t err = 0;
   int val = 0;
 
   while (1)
@@ -163,18 +165,36 @@ int main(void)
 	  }
 
 	  if (startup == 0 && GetTick() > FIRST_STARTUP_DELAY )
+	  {
 		  C3SyncReq = 1;
+		  startup = 1;
+	  }
 
 
-	  HandleButtons();
+	  ev = HandleButtons(0);
 
 	  if (Event[1])
 	  {
-		  LL_GPIO_SetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin);
 		  C3SyncReq = 1;
 		  Event[1] = 0;
 	  }
 
+	  if (Event[0] && Event[2] && NixieDisplay.DisplayMode == DISPLAYMODE_NORMAL)
+	  {
+		  NixieDisplay.DisplayMode = DISPLAYMODE_CDOWN;		//test mode only!
+		  NixieDisplay.cdown = (10 * 1000) - 1;
+		  if (ev != 0x05)
+		  {
+			  HandleButtons(1);
+			  NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
+		  }
+	  }
+
+	  if (Event[3])		//cancellaz su C3 di SSID/PASSWD
+	  {
+		  Event[3] = 0;
+		  EraseSetupC3();
+	  }
 
 
 
@@ -183,10 +203,30 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     val = RequestTimedateToC3();
+
+    if (val < 0 || NixieDisplay.EvenSecs)	//SYnc con C3 fallito: riprovbo tra xx minuti!
+    {
+    	//val = 0;
+    	if (!err)
+    	{
+    		err = 1;
+    		temp = GetTick() + C3FAULT_RETRYms;
+    		NixieDisplay.EvenSecs++;
+    	}
+    	else if (err == 1 && temp < GetTick())
+    	{
+    		C3SyncReq = 1;
+    		err = 0;
+    	}
+
+    	//Ritardo,èer riprovare tra tipo 1h!
+    }
+
     if (val == 0)
     {
     	val = 0;
-    	startup = 2;
+    	startup = 1;
+    	NixieDisplay.EvenSecs = 0;	//OK!
     }
     else if (val == -1)
     {

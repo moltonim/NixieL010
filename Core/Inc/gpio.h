@@ -41,6 +41,9 @@ extern "C" {
 #define C3_GETUP	LL_GPIO_SetOutputPin(GETUP_GPIO_Port, GETUP_Pin)
 #define C3_GETDOWN	LL_GPIO_ResetOutputPin(GETUP_GPIO_Port, GETUP_Pin)
 
+#define C3_RESET_REQ	LL_GPIO_SetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin)
+#define C3_RESET_END	LL_GPIO_ResetOutputPin(C3_RESET_GPIO_Port, C3_RESET_Pin)
+
 #define	ANODECATHODE_OFF		WRITE_REG(CATHODE_0_GPIO_Port->BRR, 0xFFFF)
 
 
