@@ -129,6 +129,7 @@ void TIM2_ISR_Handle(void);
 #define CATHODE_9_GPIO_Port GPIOB
 #define Vac_OFF_Pin LL_GPIO_PIN_15
 #define Vac_OFF_GPIO_Port GPIOA
+#define Vac_OFF_EXTI_IRQn EXTI4_15_IRQn
 #define ANODE_MU_Pin LL_GPIO_PIN_3
 #define ANODE_MU_GPIO_Port GPIOB
 #define ANODE_SD_Pin LL_GPIO_PIN_4

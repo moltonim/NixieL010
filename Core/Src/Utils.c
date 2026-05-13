@@ -98,6 +98,8 @@ int  SetRTC(const char* buf)
 
 	// 4. Chiudi e riproteggi
 	LL_RTC_ExitInitMode(RTC);
+	LL_RTC_ClearFlag_RS(RTC); // Pulisci il flag di sincronizzazione
+	while (LL_RTC_IsActiveFlag_RS(RTC) == 0) {}
 	LL_RTC_EnableWriteProtection(RTC);
 	return 0;
 }
@@ -234,10 +236,13 @@ int EraseSetupC3(void)
 	LL_mDelay(500);
 	//Ebd ERASE on C3:
 	C3_RESET_END;
+	C3_GETDOWN;
 
 	//Ensure clock in normal mode:
 	NixieDisplay.DisplayMode = DISPLAYMODE_NORMAL;
-
+	LL_mDelay(500);
+		//Ask C3 to getup
+	HV_ON;
 	//
 	//	NOTA: Lascio lorario precedente!
 	//

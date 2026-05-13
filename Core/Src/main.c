@@ -53,7 +53,7 @@ _NixieDisplay NixieDisplay;
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 //#define FIRST_STARTUP_DELAY		(61*1000+10)
-#define FIRST_STARTUP_DELAY		(11*1000)
+#define FIRST_STARTUP_DELAY		(60*1000)
 #define SEPARATOR_DELAYms		500
 #define C3FAULT_RETRYms			((3*60)*1000)
 /* USER CODE END PM */
@@ -67,7 +67,7 @@ _NixieDisplay NixieDisplay;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+void Enter_LowPower_Mode(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -106,6 +106,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  LL_PWR_EnableBkUpAccess();
   LL_SYSTICK_EnableIT();
   /* USER CODE END SysInit */
 
@@ -115,7 +116,7 @@ int main(void)
   MX_RTC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
+  LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
   // set HIGT VOLTAGE to OFF!
   HV_OFF;
   HV_OFF;
@@ -152,7 +153,9 @@ int main(void)
 	  {
 		  switch (NixieDisplay.DisplayMode)	{
 		  		default:
-		  		case DISPLAYMODE_NORMAL:	GetRTC();	break;
+		  		case DISPLAYMODE_NORMAL:
+		  			GetRTC();
+		  			break;
 		  		case DISPLAYMODE_CDOWN:		CountDown();break;
 		  }
 		  tickstart = GetTick() + 200;
@@ -161,6 +164,7 @@ int main(void)
 	  if (GetTick() > separator )	//blink 'leds'
 	  {
 		  LL_GPIO_TogglePin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
+//		  LL_GPIO_TogglePin(C3_RESET_GPIO_Port, C3_RESET_Pin);
 		  separator = GetTick() + SEPARATOR_DELAYms;
 	  }
 
@@ -169,6 +173,19 @@ int main(void)
 		  C3SyncReq = 1;
 		  startup = 1;
 	  }
+
+	  //Controllo VAC ed enter LowPOwMOde
+//	  if (!VAC_ON && startup)
+	  if (!VAC_ON)
+	  {
+		  // Un piccolo delay di conferma (es. 20ms) per evitare falsi positivi
+		  LL_mDelay(20);
+		  if (!VAC_ON)
+			  Enter_LowPower_Mode();
+	  }
+	  else
+		  LL_mDelay(20);
+
 
 
 	  ev = HandleButtons(0);
@@ -350,6 +367,89 @@ void TIM2_ISR_Handle()
 	// 2. Prossimo tubo
 	current_tube = (current_tube + 1) % 6;
 }
+
+
+static void LowPower_RestoreClocks(void)
+{
+    /*
+     * Reimposta la configurazione clock originale del tuo progetto.
+     * Esempio se usi HSI16 come sorgente:
+     */
+
+    /* Abilita HSI16 */
+    LL_RCC_HSI_Enable();
+    while (!LL_RCC_HSI_IsReady());
+
+    /* Riporta SYSCLK su HSI16 (o qualunque fosse la tua config) */
+    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSI);
+    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);
+
+    /* Se usi USART/timer, i loro clock sono già ok
+     * perché derivano da SYSCLK, ma ribilita i peripheral clock
+     * se li hai disabilitati prima di entrare in STOP */
+}
+
+void Enter_LowPower_Mode(void)
+{
+	//NON necessari: messi per sicurezza
+	HV_OFF;
+	ANODECATHODE_OFF;
+	//NON necessari
+
+	//disable TIM2  -->>> da versione precedente!
+
+	DISABLE_TIM2;
+	LL_SYSTICK_DisableIT();
+    /*
+     * Prima di entrare in STOP:
+     * - Nixie già spente (gestisci tu nel main quando serve)
+     * - HV 180V già disabilitata
+     * - UART verso ESP32C3 già idle
+     */
+
+    /* Disabilita i periferici non necessari per ridurre consumo */
+    /* (adatta in base a cosa hai attivo) */
+
+    /* Assicurati che il pending flag EXTI15 sia pulito */
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
+
+    /* Seleziona STOP mode (non STANDBY) */
+    /* PWR_CR: PDDS=0 → STOP mode */
+    LL_PWR_SetPowerMode(LL_PWR_MODE_STOP);
+
+    /* Regolatore in low-power durante STOP (risparmio aggiuntivo) */
+    LL_PWR_SetRegulModeLP(LL_PWR_REGU_LPMODES_LOW_POWER);
+
+    /* Sul L010 non c'è ULP mode come sull'L0x3, ma puoi
+     * disabilitare il Vrefint se non lo usi */
+    /* LL_PWR_EnableUltraLowPower(); // solo se disponibile */
+
+    /* Configura il core per WFI in STOP */
+    /* SCR: SLEEPDEEP=1 */
+    LL_LPM_EnableDeepSleep();
+
+    /* Barriera + entrata in STOP */
+    __DSB();
+    __ISB();
+    __WFI();
+
+    /*
+     * *** EXECUTION RESUMES HERE AFTER WAKEUP ***
+     *
+     * Dopo il wakeup da STOP, il clock torna su MSI (default),
+     * devi reiniziare il clock di sistema se usi HSI o PLL.
+     */
+
+    /* Torna in sleep normale per i successivi WFI */
+    LL_LPM_EnableSleep();
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
+    /* Reinizializza i clock di sistema se necessario */
+    SystemClock_Config();
+    ENABLE_TIM2;
+    LL_SYSTICK_EnableIT();
+    HV_ON;
+}
+
 
 /* USER CODE END 4 */
 
