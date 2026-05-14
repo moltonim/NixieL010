@@ -7,6 +7,7 @@ Enter
 
 Ipotesi di configurazione tasti:
 Tengo premuto UP per 1.5 secondi: richiesta di sync con S3
+	OK!
 
 Tengo premuto tasto Setup + Enter:
 COuntdown da 10 a 0, se non premo nulla:
@@ -14,6 +15,7 @@ COuntdown da 10 a 0, se non premo nulla:
 	Continuo con la "vecchia" data/ora.
 	
 Ogni 2 giorni, alle 2:00 mi collego ed aggiorno data/ora (mettendo il gionro == 1)
+	Da testare
 
 Cosa succede se vado in timeout dopo i 2 giorni:
 	Nulla per 10 giorni (5 volte).
