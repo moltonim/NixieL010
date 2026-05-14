@@ -399,7 +399,7 @@ void MX_GPIO_Init(void)
   LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE15);
 
   /**/
-  LL_GPIO_SetPinPull(Vac_OFF_GPIO_Port, Vac_OFF_Pin, LL_GPIO_PULL_DOWN);
+  LL_GPIO_SetPinPull(Vac_OFF_GPIO_Port, Vac_OFF_Pin, LL_GPIO_PULL_UP);
 
   /**/
   LL_GPIO_SetPinMode(Vac_OFF_GPIO_Port, Vac_OFF_Pin, LL_GPIO_MODE_INPUT);

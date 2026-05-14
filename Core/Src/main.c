@@ -53,7 +53,7 @@ _NixieDisplay NixieDisplay;
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 //#define FIRST_STARTUP_DELAY		(61*1000+10)
-#define FIRST_STARTUP_DELAY		(60*1000)
+#define FIRST_STARTUP_DELAY		(5*60*1000)
 #define SEPARATOR_DELAYms		500
 #define C3FAULT_RETRYms			((3*60)*1000)
 /* USER CODE END PM */
@@ -369,31 +369,12 @@ void TIM2_ISR_Handle()
 }
 
 
-static void LowPower_RestoreClocks(void)
-{
-    /*
-     * Reimposta la configurazione clock originale del tuo progetto.
-     * Esempio se usi HSI16 come sorgente:
-     */
-
-    /* Abilita HSI16 */
-    LL_RCC_HSI_Enable();
-    while (!LL_RCC_HSI_IsReady());
-
-    /* Riporta SYSCLK su HSI16 (o qualunque fosse la tua config) */
-    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSI);
-    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);
-
-    /* Se usi USART/timer, i loro clock sono già ok
-     * perché derivano da SYSCLK, ma ribilita i peripheral clock
-     * se li hai disabilitati prima di entrare in STOP */
-}
-
 void Enter_LowPower_Mode(void)
 {
 	//NON necessari: messi per sicurezza
 	HV_OFF;
 	ANODECATHODE_OFF;
+	LL_GPIO_ResetOutputPin(SEPARATOR_GPIO_Port, SEPARATOR_Pin);
 	//NON necessari
 
 	//disable TIM2  -->>> da versione precedente!
