@@ -1,0 +1,77 @@
+#include <WiFi.h>
+#include <WiFiManager.h>
+#include <time.h>
+
+#define PIN_SVEGLIA   GPIO_NUM_4 
+#define PIN_LED       8          // LED sulla scheda
+#define PIN_FEEDBACK  5          // Feedback verso il master
+
+void setup() {
+    // 1. Inizializzazione Pin
+    pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_FEEDBACK, OUTPUT);
+    pinMode(PIN_SVEGLIA, INPUT_PULLDOWN);
+    
+    digitalWrite(PIN_FEEDBACK, LOW); // Inizializzato a basso come richiesto
+    digitalWrite(PIN_LED, HIGH);     // Accendiamo il LED subito
+
+    Serial.begin(115200);
+    // Aspettiamo che la seriale sia pronta (per il monitor del PC)
+    unsigned long waitSerial = millis();
+    while (!Serial && millis() - waitSerial < 2000); 
+    
+    Serial.println("\n--- TEST MODALITÀ CONTINUA ---");
+
+    // 2. Connessione WiFi (una sola volta all'inizio)
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(60);
+    if (!wm.autoConnect("ESP32C3_Setup")) {
+        Serial.println("Connessione Fallita. Procedo con RTC interno.");
+    } else {
+        Serial.println("WiFi Connesso!");
+        configTime(0, 0, "pool.ntp.org");
+        setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+        tzset();
+    }
+
+    // 3. LOOP DI INVIO (Finché il pin 4 resta ALTO)
+    // Questo ti permette di vedere se il sistema è vivo e legge l'ora
+    while (digitalRead(PIN_SVEGLIA) == HIGH) {
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+            Serial.printf("INVIO: T%04d%02d%02d%02d%02d%02d\n", 
+                          timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                          timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        } else {
+            Serial.println("INVIO: Attesa sincronizzazione ora...");
+        }
+        
+        // Blink rapido durante l'invio per capire che non è bloccato
+        digitalWrite(PIN_LED, HIGH);
+        delay(500);
+        digitalWrite(PIN_LED, LOW);
+        delay(500);
+    }
+
+    // 4. PREPARAZIONE AL LETARGO (Solo quando rilasci il tasto)
+    Serial.println("Tasto rilasciato. Preparazione Deep Sleep...");
+    Serial.flush();
+    
+    digitalWrite(PIN_LED, LOW);
+    digitalWrite(PIN_FEEDBACK, LOW);
+
+    // Spegnimento radio per sicurezza
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+
+    // Configura il risveglio per quando il pin 4 tornerà ALTO
+    esp_deep_sleep_enable_gpio_wakeup(1 << PIN_SVEGLIA, ESP_GPIO_WAKEUP_GPIO_HIGH);
+    
+    Serial.println("Entro in Deep Sleep ORA.");
+    delay(100); 
+    esp_deep_sleep_start();
+}
+
+void loop() {
+    // Non viene mai raggiunto
+}

@@ -1,0 +1,35 @@
+#include <Arduino.h>
+
+// PIN DA USARE (Obbligatori tra 0 e 5 per la sveglia)
+#define PIN_SVEGLIA_PULSANTE GPIO_NUM_4  
+#define PIN_LED              8         
+
+void setup() {
+    // Configurazione PIN
+    pinMode(PIN_LED, OUTPUT);
+    pinMode(PIN_SVEGLIA_PULSANTE, INPUT_PULLDOWN); // Assicura che sia LOW se non premuto
+
+    // 1. Ciclo di lampeggio a 10Hz (100ms totali: 50ms ON + 50ms OFF)
+    // Continua a lampeggiare FINCHÉ il pulsante è premuto (HIGH)
+    while (digitalRead(PIN_SVEGLIA_PULSANTE) == HIGH) {
+        digitalWrite(PIN_LED, HIGH);
+        delay(50);
+        digitalWrite(PIN_LED, LOW);
+        delay(50);
+    }
+
+    // 2. Il pulsante è stato rilasciato
+    // Spegniamo il LED prima di dormire
+    digitalWrite(PIN_LED, LOW);
+
+    // 3. Configuriamo il risveglio per la prossima pressione
+    // Usiamo il livello HIGH (si sveglia quando il pin va a 3.3V)
+    esp_deep_sleep_enable_gpio_wakeup(1 << PIN_SVEGLIA_PULSANTE, ESP_GPIO_WAKEUP_GPIO_HIGH);
+
+    // 4. Entriamo in Deep Sleep
+    esp_deep_sleep_start();
+}
+
+void loop() {
+    // Mai eseguito
+}
