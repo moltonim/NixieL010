@@ -52,8 +52,8 @@ _NixieDisplay NixieDisplay;
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-//#define FIRST_STARTUP_DELAY		(61*1000+10)
-#define FIRST_STARTUP_DELAY		(5*60*1000)
+#define FIRST_STARTUP_DELAY		(10*1000+10)
+//#define FIRST_STARTUP_DELAY		(5*60*1000)
 #define SEPARATOR_DELAYms		500
 #define C3FAULT_RETRYms			((3*60)*1000)
 /* USER CODE END PM */
@@ -140,6 +140,8 @@ int main(void)
   HV_ON;
   HV_OFF;
 #endif
+  //First startup delay - execute once
+  LL_mDelay(500);
   HV_ON;
   
   uint32_t startup = 0;
